@@ -1,0 +1,68 @@
+{
+  "name": "@truckdesk/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TruckDesk API: Fastify on Node, Hono on Cloudflare Workers, Drizzle + Postgres",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./worker": "./dist/worker.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "drizzle"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
+    "deploy:worker": "wrangler deploy",
+    "deploy:worker:cfpages": "wrangler pages deploy dist --project-name truckdesk-api",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "seed": "tsx src/seed/index.ts",
+    "seed:demo": "tsx src/seed/demo-company.ts",
+    "smoke": "tsx src/smoke.ts",
+    "clean": "rimraf dist *.tsbuildinfo .wrangler",
+    "probe": "tsx src/probe-adversarial.ts"
+  },
+  "dependencies": {
+    "hono": "^4.13.12",
+    "@truckdesk/loads": "workspace:*",
+    "fastify": "^5.12.5",
+    "@truckdesk/llm": "workspace:*",
+    "@truckdesk/integrations": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "@truckdesk/core": "workspace:*",
+    "fastify-plugin": "^5.0.1",
+    "dotenv": "^17.2.3",
+    "@fastify/cors": "^11.3.0",
+    "zod": "^4.6.5",
+    "@fastify/rate-limit": "^11.2.0",
+    "@supabase/supabase-js": "^2.117.2",
+    "@truckdesk/sms": "workspace:*",
+    "@truckdesk/shared": "workspace:*",
+    "@truckdesk/eld": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261003.1",
+    "@types/node": "^26.6.4",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.0.0"
+  }
+}

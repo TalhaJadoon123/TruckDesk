@@ -1,0 +1,36 @@
+# Cloudflare Worker: the free edge surface.
+#
+# Free tier: 100,000 requests/day, which is far more than a 25-truck carrier
+# needs. Deploy with `pnpm --filter @truckdesk/api deploy:worker`.
+name = "truckdesk-api"
+main = "dist/worker.js"
+compatibility_date = "2026-10-01"
+
+# Workers has no Node APIs by default; postgres.js and node:crypto need these.
+compatibility_flags = ["nodejs_compat"]
+
+# Live positions, cached for 5 minutes. Durable across isolates so a map that
+# reloads after an isolate recycles still shows where the trucks are.
+[[kv_namespaces]]
+binding = "POSITIONS"
+id = "truckdesk_positions"
+
+[observability]
+enabled = true
+
+# Secrets are set with `wrangler secret put NAME`, never in this file:
+#   GROQ_API_KEY, API_TOKEN
+#
+# Vars below are the non-secret configuration. API_ORIGIN points at the Node API
+# (Fly/Railway/Docker) that owns Postgres; the Worker proxies writes to it.
+[vars]
+ENVIRONMENT = "production"
+API_ORIGIN = ""
+CORS_ORIGINS = "https://truckdesk.pages.dev,https://truckdesk.eu.org"
+
+# Keep the Worker bundle small: it serves the edge routes, not the whole API.
+[build]
+command = "pnpm run build"
+
+[dev]
+port = 8787

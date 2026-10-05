@@ -1,0 +1,37 @@
+{
+  "name": "@truckdesk/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TruckDesk web: marketing site, dispatcher dashboard, drag-drop dispatch",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "next lint --dir src --dir app 2>/dev/null || echo 'no lint configured'",
+    "deploy:cf": "next build && wrangler pages deploy .next/static --project-name truckdesk --compatibility-date=2026-10-01",
+    "clean": "rimraf .next *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@truckdesk/core": "workspace:*",
+    "@truckdesk/shared": "workspace:*",
+    "leaflet": "^1.9.4",
+    "next": "^16.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.2"
+  }
+}

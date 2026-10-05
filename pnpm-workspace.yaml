@@ -1,0 +1,6 @@
+packages:
+  - "packages/*"
+
+# Mobile pulls a different React copy for native; keep it isolated.
+publicHoistPattern:
+  - "*eslint*"

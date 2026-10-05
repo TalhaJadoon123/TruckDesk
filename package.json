@@ -1,0 +1,54 @@
+{
+  "name": "truckdesk",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TruckDesk - dispatch platform for small trucking companies (4-20 trucks)",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "build": "turbo run build",
+    "build:libs": "turbo run build --filter='./packages/*' --filter='!@truckdesk/web' --filter='!@truckdesk/docs' --filter='!@truckdesk/mobile'",
+    "dev": "turbo run dev --parallel",
+    "dev:api": "pnpm --filter @truckdesk/api dev",
+    "dev:web": "pnpm --filter @truckdesk/web dev",
+    "dev:mobile": "pnpm --filter @truckdesk/mobile dev",
+    "dev:docs": "pnpm --filter @truckdesk/docs dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "db:generate": "pnpm --filter @truckdesk/api db:generate",
+    "db:push": "pnpm --filter @truckdesk/api db:push",
+    "db:migrate": "pnpm --filter @truckdesk/api db:migrate",
+    "db:studio": "pnpm --filter @truckdesk/api db:studio",
+    "seed": "pnpm --filter @truckdesk/api seed",
+    "seed:demo": "pnpm --filter @truckdesk/api seed:demo",
+    "clean": "rimraf node_modules turbo.json.tmp **/.turbo **/dist **/.next",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "verify": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "deploy:api": "pnpm --filter @truckdesk/api deploy:worker",
+    "deploy:web": "pnpm --filter @truckdesk/web deploy:cf",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d --build",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@vitest/coverage-v8": "^5.0.3",
+    "prettier": "^3.9.9",
+    "rimraf": "^6.0.1",
+    "turbo": "^2.11.7",
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "^0.25.0"
+    }
+  }
+}

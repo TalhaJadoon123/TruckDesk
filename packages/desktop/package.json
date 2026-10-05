@@ -1,0 +1,63 @@
+{
+    "name":  "@truckdesk/desktop",
+    "version":  "1.0.0",
+    "private":  true,
+    "type":  "module",
+    "description":  "TruckDesk desktop: dispatch board, fleet map and money, in a native window",
+    "main":  "dist/main.cjs",
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.json \u0026\u0026 node scripts/stage-assets.mjs",
+                    "build:main":  "tsc -p tsconfig.main.json \u0026\u0026 node scripts/rename-preload.mjs",
+                    "dev":  "node scripts/dev.mjs",
+                    "start":  "electron dist/main.cjs",
+                    "typecheck":  "tsc -p tsconfig.json --noEmit \u0026\u0026 tsc -p tsconfig.main.json --noEmit",
+                    "pack":  "npm run build \u0026\u0026 npm run build:main \u0026\u0026 electron-builder --dir",
+                    "dist":  "npm run build \u0026\u0026 npm run build:main \u0026\u0026 electron-builder",
+                    "clean":  "rimraf dist dist-ui release *.tsbuildinfo"
+                },
+    "dependencies":  {
+                         "@truckdesk/shared":  "workspace:*"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^26.6.4",
+                            "electron":  "^33.2.1",
+                            "electron-builder":  "^25.1.8",
+                            "typescript":  "^5.9.2"
+                        },
+    "build":  {
+                  "appId":  "app.truckdesk.desktop",
+                  "productName":  "TruckDesk",
+                  "directories":  {
+                                      "output":  "release"
+                                  },
+                  "files":  [
+                                "dist/**/*",
+                                "assets/**/*",
+                                "package.json"
+                            ],
+                  "mac":  {
+                              "target":  [
+                                             "dmg",
+                                             "zip"
+                                         ],
+                              "category":  "public.app-category.business"
+                          },
+                  "win":  {
+                              "target":  [
+                                             "nsis",
+                                             "portable"
+                                         ]
+                          },
+                  "linux":  {
+                                "target":  [
+                                               "AppImage",
+                                               "deb"
+                                           ],
+                                "category":  "Office"
+                            },
+                  "nsis":  {
+                               "oneClick":  false,
+                               "allowToChangeInstallationDirectory":  true
+                           }
+              }
+}

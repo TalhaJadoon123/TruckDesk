@@ -1,0 +1,115 @@
+@import 'tailwindcss';
+
+/**
+ * TruckDesk design tokens.
+ *
+ * Dark by default: a dispatcher screen is open all day in a cab or an office, and
+ * a dark board makes the four truck-status colours read at a glance. The status
+ * colours are the only saturated things on the page, which is what lets a
+ * dispatcher scan a board of 25 loads in one pass.
+ */
+@theme {
+  --color-board: oklch(0.18 0.012 265);
+  --color-panel: oklch(0.215 0.014 265);
+  --color-panel-raised: oklch(0.25 0.016 265);
+  --color-edge: oklch(0.32 0.018 265);
+  --color-ink: oklch(0.97 0.004 265);
+  --color-ink-dim: oklch(0.72 0.014 265);
+  --color-ink-faint: oklch(0.58 0.016 265);
+
+  --color-available: oklch(0.72 0.17 152);
+  --color-loaded: oklch(0.68 0.19 145);
+  --color-empty: oklch(0.78 0.15 85);
+  --color-maintenance: oklch(0.62 0.21 25);
+  --color-booked: oklch(0.7 0.13 250);
+  --color-transit: oklch(0.8 0.15 95);
+  --color-delivered: oklch(0.74 0.14 165);
+  --color-paid: oklch(0.7 0.12 210);
+  --color-alert: oklch(0.66 0.2 20);
+  --color-accent: oklch(0.72 0.16 155);
+}
+
+* {
+  border-color: var(--color-edge);
+}
+
+html,
+body {
+  background: var(--color-board);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular figures everywhere money or mileage appears, so columns line up. */
+.money,
+.miles,
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbars that do not shout. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-edge);
+  border-radius: 999px;
+  border: 2px solid var(--color-board);
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: slide-in 0.18s ease-out;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 oklch(0.72 0.17 152 / 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px oklch(0.72 0.17 152 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.72 0.17 152 / 0);
+  }
+}
+
+.pulse-live {
+  animation: pulse-ring 2.4s infinite;
+}
+
+/* Leaflet lives in a dark UI, so the tiles and controls need to match. */
+.leaflet-container {
+  background: var(--color-board);
+  font-family: inherit;
+}
+.leaflet-control-zoom a {
+  background: var(--color-panel-raised);
+  color: var(--color-ink);
+  border-color: var(--color-edge);
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--color-panel-raised);
+  color: var(--color-ink);
+  border: 1px solid var(--color-edge);
+}
+.leaflet-popup-content {
+  margin: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}

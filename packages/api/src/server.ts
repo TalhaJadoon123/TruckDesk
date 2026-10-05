@@ -1,0 +1,221 @@
+import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
+import Fastify, { type FastifyInstance } from 'fastify';
+
+import { DomainError, PLANS } from '@truckdesk/shared';
+
+import authPlugin, { sendError } from './auth.plugin.js';
+import { describeCapabilities, type Env } from './env.js';
+import { capabilityCatalog } from '@truckdesk/integrations';
+import financeRoutes, { publicRoutes } from './routes/finance.js';
+import fleetRoutes from './routes/fleet.js';
+import integrationRoutes from './routes/integrations.js';
+import loadRoutes from './routes/loads.js';
+import { createServices, realtimeStatus, type Services } from './services/container.js';
+
+/**
+ * The Fastify application.
+ *
+ * `buildServer` returns an instance without listening, so tests can drive it with
+ * `inject()` and the Worker can reuse the same wiring. Nothing here reads the
+ * clock or the environment directly: everything arrives through the container.
+ */
+
+export interface BuildServerOptions {
+  services?: Services;
+  env?: Env;
+  /** Force the in-memory store. Tests set this. */
+  memory?: boolean;
+  logger?: boolean;
+}
+
+export interface TruckDeskServer extends FastifyInstance {
+  tdServices: Services;
+}
+
+export async function buildServer(options: BuildServerOptions = {}): Promise<TruckDeskServer> {
+  const services =
+    options.services ??
+    createServices({
+      ...(options.env ? { env: options.env } : {}),
+      ...(options.memory !== undefined ? { memory: options.memory } : {}),
+    });
+
+  const config = services.env;
+  const logger =
+    options.logger ?? (config.NODE_ENV !== 'test' && process.env['LOG_LEVEL'] !== 'silent');
+
+  const app = Fastify({
+    logger,
+    // Behind a proxy, which is how Cloudflare and a Docker deploy both arrive.
+    trustProxy: true,
+    disableRequestLogging: config.NODE_ENV === 'production',
+    // Must comfortably exceed the largest legal upload. A POD photo arrives as
+    // base64 in a JSON envelope, which inflates the raw file by about 37%, so a
+    // 12MB photo needs ~17MB of request body. Setting this lower than the
+    // documented upload limit is a silent, hard-to-diagnose failure: the client
+    // is told the file is too big while the app says 12MB is fine.
+    bodyLimit: Math.ceil(config.MAX_UPLOAD_BYTES * 1.5) + 64 * 1024,
+  }) as unknown as TruckDeskServer;
+
+  app.decorate('tdServices', services);
+
+  /* ------------------------------------------------------------ plugins */
+
+  await app.register(cors, {
+    origin: resolveOrigins(config),
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-Request-Id', 'X-Api-Key'],
+  });
+
+  await app.register(rateLimit, {
+    // The free tiers are the binding constraint, so the limit is generous for
+    // humans and tight enough to stop a runaway mobile retry loop.
+    max: 600,
+    timeWindow: '1 minute',
+    // The driver's phone polls position and syncs offline queues; those are not
+    // the calls a rate limiter should be protecting.
+    allowList: (request) => request.url.startsWith('/health') || request.url.startsWith('/track/ping'),
+    keyGenerator: (request) => {
+      const header = request.headers.authorization;
+      if (header) return header.slice(-24);
+      return request.ip;
+    },
+  });
+
+  await app.register(authPlugin, { services });
+
+  /* -------------------------------------------------------------- routes */
+
+  await app.register(publicRoutes, { services });
+  await app.register(loadRoutes, { services });
+  await app.register(fleetRoutes, { services });
+  await app.register(financeRoutes, { services });
+  await app.register(integrationRoutes, { services });
+
+  /* ------------------------------------------------------------- meta */
+
+  app.get('/capabilities', async (_request, reply) => {
+    return reply.send({
+      capabilities: describeCapabilities(config),
+      integrations: capabilityCatalog(),
+      realtime: realtimeStatus(services),
+      plans: Object.values(PLANS).map((plan) => ({
+        id: plan.id,
+        name: plan.name,
+        priceCents: plan.priceCents,
+        maxTrucks: plan.maxTrucks,
+        maxDrivers: plan.maxDrivers,
+      })),
+    });
+  });
+
+  app.get('/', async (_request, reply) => {
+    return reply.send({
+      name: 'TruckDesk API',
+      version: '1.0.0',
+      docs: '/docs/README.md',
+      endpoints: [
+        'GET  /health',
+        'GET  /capabilities',
+        'GET  /pricing',
+        'POST /public/ifta',
+        'POST /signup',
+        'GET  /dashboard',
+        'GET  /loads',
+        'POST /loads',
+        'GET  /loads/:id',
+        'POST /loads/parse-email',
+        'POST /loads/import-csv',
+        'GET  /dispatch/board',
+        'POST /dispatch',
+        'POST /dispatch/unassign',
+        'POST /dispatch/bulk',
+        'POST /dispatch/auto-assign',
+        'POST /dispatch/match',
+        'POST /loads/:id/status',
+        'POST /loads/:id/cancel',
+        'POST /loads/:id/stops/:stopId/arrive',
+        'POST /loads/:id/stops/:stopId/complete',
+        'POST /loads/:id/documents',
+        'GET  /loads/:id/document.pdf?kind=bol|pod|rate_con',
+        'GET  /trucks',
+        'POST /trucks',
+        'GET  /drivers',
+        'POST /track/ping',
+        'GET  /track',
+        'GET  /track/:id',
+        'GET  /hos',
+        'GET  /integrations',
+        'GET  /integrations/lane?from=&to=',
+        'GET  /integrations/load/:id/weather',
+        'GET  /integrations/geocode?q=',
+        'POST /integrations/vin',
+        'GET  /integrations/alerts?lat=&lng=',
+        'POST /ifta/calculate',
+        'GET  /ifta/jurisdictions',
+        'POST /settle',
+        'POST /invoice',
+        'GET  /invoice/aging',
+        'GET  /invoice/:id/quickpay',
+      ],
+    });
+  });
+
+  app.setNotFoundHandler((request, reply) => {
+    return reply.code(404).send({
+      error: { code: 'NOT_FOUND', message: `No route for ${request.method} ${request.url}` },
+    });
+  });
+
+  app.setErrorHandler((raw: unknown, request, reply) => {
+    const error = raw as { statusCode?: number; validation?: unknown; message?: string };
+    if (error instanceof DomainError) {
+      return sendError(reply, error);
+    }
+
+    const status = typeof error.statusCode === 'number' ? error.statusCode : 500;
+
+    if (status === 429) {
+      return reply.code(429).send({
+        error: { code: 'RATE_LIMITED', message: 'Too many requests; slow down.' },
+      });
+    }
+    if (status === 400 && error.validation) {
+      return sendError(reply, error);
+    }
+
+    request.log.error({ err: error }, 'Unhandled request error');
+
+    return reply.code(status >= 500 ? 500 : status).send({
+      error: {
+        code: status >= 500 ? 'INTERNAL' : 'INVALID_INPUT',
+        // Never leak an internal message or stack to a client.
+        message: status >= 500 ? 'Internal server error' : (error.message ?? 'Bad request'),
+      },
+    });
+  });
+
+  return app;
+}
+
+function resolveOrigins(config: Env): true | string[] {
+  if (config.CORS_ORIGINS) {
+    return config.CORS_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
+  }
+  // Localhost by default; a wildcard in production would be a real hole.
+  if (config.NODE_ENV === 'production') {
+    return ['https://truckdesk.app'];
+  }
+  return [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:4000',
+    'http://localhost:8081',
+  ];
+}
+
+export type { Services };

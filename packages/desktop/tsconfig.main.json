@@ -1,0 +1,27 @@
+{
+    "compilerOptions":  {
+                            "target":  "ES2022",
+                            "lib":  [
+                                        "ES2023"
+                                    ],
+                            "module":  "CommonJS",
+                            "moduleResolution":  "Node",
+                            "strict":  true,
+                            "esModuleInterop":  true,
+                            "skipLibCheck":  true,
+                            "outDir":  "dist",
+                            "rootDir":  "src/main",
+                            "types":  [
+                                          "node"
+                                      ]
+                        },
+    "include":  [
+                    "src/main/**/*.ts",
+                    "src/main/**/*.cts"
+                ],
+    "exclude":  [
+                    "node_modules",
+                    "dist",
+                    "release"
+                ]
+}

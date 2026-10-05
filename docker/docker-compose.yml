@@ -1,0 +1,90 @@
+# TruckDesk - full local stack.
+#
+#   docker compose -f docker/docker-compose.yml up -d --build
+#
+# Brings up Postgres, the API and the web app with no cloud accounts and no
+# spend. Put a free-tier DATABASE_URL in .env instead and drop the `db` service
+# when you want to use Neon or Supabase.
+
+name: truckdesk
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: truckdesk
+      POSTGRES_PASSWORD: truckdesk
+      POSTGRES_DB: truckdesk
+    ports:
+      - '5432:5432'
+    volumes:
+      - truckdesk-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U truckdesk -d truckdesk']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: '4000'
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://truckdesk:truckdesk@db:5432/truckdesk
+      DATABASE_PREPARE: 'true'
+      AUTH_SECRET: ${AUTH_SECRET:-local-dev-secret-change-me-please-32chars}
+      API_TOKEN_SECRET: ${API_TOKEN_SECRET:-local-dev-secret-change-me-please-32chars}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
+      SMS_ENABLED: ${SMS_ENABLED:-false}
+    ports:
+      - '4000:4000'
+    command: >
+      sh -c "node packages/api/dist/db/migrate.js && node packages/api/dist/main.js"
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      AUTH_SECRET: ${AUTH_SECRET:-local-dev-secret-change-me-please-32chars}
+      API_TOKEN_SECRET: ${API_TOKEN_SECRET:-local-dev-secret-change-me-please-32chars}
+    ports:
+      - '3000:3000'
+
+  # One-shot: seed the demo company.  docker compose ... run --rm seed
+  seed:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://truckdesk:truckdesk@db:5432/truckdesk
+      AUTH_SECRET: ${AUTH_SECRET:-local-dev-secret-change-me-please-32chars}
+      API_TOKEN_SECRET: ${API_TOKEN_SECRET:-local-dev-secret-change-me-please-32chars}
+    command: node packages/api/dist/seed/index.js
+    profiles: ['tools']
+
+volumes:
+  truckdesk-pgdata:

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!--
+      The renderer loads no third-party script and no remote origin. The API is
+      reached through the Node main process rather than from this page, so a
+      malicious load reference cannot become a request from the desktop shell.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:4000; font-src 'self'; form-action 'none'; base-uri 'none'"
+    />
+    <title>TruckDesk</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "@truckdesk/docs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TruckDesk documentation site",
+  "scripts": {
+    "dev": "next dev --port 3100",
+    "build": "next build",
+    "start": "next start --port 3100",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rimraf .next *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@truckdesk/shared": "workspace:*",
+    "gray-matter": "^4.0.3",
+    "marked": "^18.0.14",
+    "next": "^16.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.2"
+  }
+}
