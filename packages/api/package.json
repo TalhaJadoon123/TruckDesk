@@ -1,69 +1,70 @@
 {
-  "name": "@truckdesk/api",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "description": "TruckDesk API: Fastify on Node, Hono on Cloudflare Workers, Drizzle + Postgres",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
-    "./worker": "./dist/worker.js",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist",
-    "drizzle"
-  ],
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsx watch src/main.ts",
-    "start": "node dist/main.js",
-    "worker:dev": "wrangler dev",
-    "worker:deploy": "wrangler deploy",
-    "deploy:worker": "wrangler deploy",
-    "deploy:worker:cfpages": "wrangler pages deploy dist --project-name truckdesk-api",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "tsc -p tsconfig.json --noEmit",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
-    "db:migrate": "tsx src/db/migrate.ts",
-    "db:studio": "drizzle-kit studio",
-    "seed": "tsx src/seed/index.ts",
-    "seed:demo": "tsx src/seed/demo-company.ts",
-    "smoke": "tsx src/smoke.ts",
-    "clean": "rimraf dist *.tsbuildinfo .wrangler",
-    "probe": "tsx src/probe-adversarial.ts"
-  },
-  "dependencies": {
-    "@fastify/cors": "^11.3.0",
-    "@fastify/rate-limit": "^11.2.0",
-    "@supabase/supabase-js": "^2.117.2",
-    "@truckdesk/core": "workspace:*",
-    "@truckdesk/eld": "workspace:*",
-    "@truckdesk/integrations": "workspace:*",
-    "@truckdesk/llm": "workspace:*",
-    "@truckdesk/loads": "workspace:*",
-    "@truckdesk/shared": "workspace:*",
-    "@truckdesk/sms": "workspace:*",
-    "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.45.3",
-    "fastify": "^5.12.5",
-    "fastify-plugin": "^5.0.1",
-    "hono": "^4.13.12",
-    "postgres": "^3.4.9",
-    "zod": "^4.6.5"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261003.1",
-    "@types/node": "^26.6.4",
-    "drizzle-kit": "^0.31.11",
-    "tsx": "^4.23.15",
-    "typescript": "^5.9.2",
-    "wrangler": "^4.0.0"
-  }
+    "name":  "@truckdesk/api",
+    "version":  "1.0.0",
+    "private":  true,
+    "type":  "module",
+    "description":  "TruckDesk API: Fastify on Node, Hono on Cloudflare Workers, Drizzle + Postgres",
+    "main":  "./dist/index.js",
+    "types":  "./dist/index.d.ts",
+    "exports":  {
+                    ".":  {
+                              "types":  "./dist/index.d.ts",
+                              "import":  "./dist/index.js",
+                              "default":  "./dist/index.js"
+                          },
+                    "./worker":  "./dist/worker.js",
+                    "./package.json":  "./package.json"
+                },
+    "files":  [
+                  "dist",
+                  "drizzle"
+              ],
+    "scripts":  {
+                    "lint":  "tsc -p tsconfig.json --noEmit",
+                    "smoke":  "tsx src/smoke.ts",
+                    "probe":  "tsx src/probe-adversarial.ts",
+                    "clean":  "rimraf dist *.tsbuildinfo .wrangler",
+                    "deploy:worker:cfpages":  "wrangler pages deploy dist --project-name truckdesk-api",
+                    "db:studio":  "drizzle-kit studio",
+                    "start":  "node dist/main.js",
+                    "deploy:worker":  "wrangler deploy",
+                    "worker:deploy":  "wrangler deploy",
+                    "db:migrate":  "tsx src/db/migrate.ts",
+                    "worker:dev":  "wrangler dev",
+                    "db:push":  "drizzle-kit push",
+                    "seed:demo":  "tsx src/seed/demo-company.ts",
+                    "dev":  "tsx watch src/main.ts",
+                    "build":  "tsc -p tsconfig.json",
+                    "db:generate":  "drizzle-kit generate",
+                    "typecheck":  "tsc -p tsconfig.json --noEmit",
+                    "seed":  "tsx src/seed/index.ts",
+                    "gate":  "tsx src/security-gate.ts"
+                },
+    "dependencies":  {
+                         "@fastify/cors":  "^11.3.0",
+                         "@fastify/rate-limit":  "^11.2.0",
+                         "@supabase/supabase-js":  "^2.117.2",
+                         "@truckdesk/core":  "workspace:*",
+                         "@truckdesk/eld":  "workspace:*",
+                         "@truckdesk/integrations":  "workspace:*",
+                         "@truckdesk/llm":  "workspace:*",
+                         "@truckdesk/loads":  "workspace:*",
+                         "@truckdesk/shared":  "workspace:*",
+                         "@truckdesk/sms":  "workspace:*",
+                         "dotenv":  "^17.2.3",
+                         "drizzle-orm":  "^0.45.3",
+                         "fastify":  "^5.12.5",
+                         "fastify-plugin":  "^5.0.1",
+                         "hono":  "^4.13.12",
+                         "postgres":  "^3.4.9",
+                         "zod":  "^4.6.5"
+                     },
+    "devDependencies":  {
+                            "@cloudflare/workers-types":  "^5.20261003.1",
+                            "@types/node":  "^26.6.4",
+                            "drizzle-kit":  "^0.31.11",
+                            "tsx":  "^4.23.15",
+                            "typescript":  "^5.9.2",
+                            "wrangler":  "^4.0.0"
+                        }
 }

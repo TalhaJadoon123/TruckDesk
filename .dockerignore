@@ -1,0 +1,63 @@
+# Docker build context exclusions.
+#
+# Without this, `docker build` sends the entire working tree - including
+# node_modules, .git and every build artifact - to the daemon on every build.
+# That is slow, and it means the build context is a place secrets can be
+# captured into an image layer by accident.
+
+# Dependencies are reinstalled inside the image against the lockfile, so a
+# host node_modules is both useless and enormous.
+node_modules
+**/node_modules
+.pnpm-store
+
+# Build output is rebuilt in the image.
+dist
+**/dist
+build
+**/build
+.next
+**/.next
+out
+**/out
+.turbo
+**/.turbo
+.wrangler
+**/.wrangler
+coverage
+**/coverage
+release
+
+# VCS and CI metadata.
+.git
+.github
+.gitignore
+
+# Local configuration and credentials. `.env.example` is kept because the
+# image does not need it, but any real `.env` must never be copied in.
+.env
+.env.*
+!.env.example
+
+# The Expo mobile app is not part of the API or web image.
+packages/mobile
+**/.expo
+
+# Editor and OS noise.
+.vscode
+.idea
+**/*.tsbuildinfo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs.
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# Local tooling output and docs that are not needed to run the service.
+scripts
+docs
+README.md

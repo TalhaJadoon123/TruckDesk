@@ -20,7 +20,16 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
-packages/api/drizzle/meta/
+# NOT ignored: packages/api/drizzle/meta/_journal.json is the ordered
+# manifest drizzle-kit migrate reads to know which migrations to apply.
+# Ignoring it leaves a clean clone with .sql files and no journal, so
+# `pnpm db:migrate` finds nothing to do and the deploy leaves the schema
+# empty. Only the schema snapshot is machine-generated noise.
+# Migrations are committed. The SQL is the history and the journal is the
+# ordered manifest `drizzle-kit migrate` reads, so a clean clone can apply
+# them. Ignoring the journal leaves migrations that silently do nothing.
+packages/api/drizzle/meta/*.json
+!packages/api/drizzle/meta/_journal.json
 packages/mobile/.expo/
 packages/mobile/web-build/
 packages/mobile/android/

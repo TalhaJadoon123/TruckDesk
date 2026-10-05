@@ -563,6 +563,7 @@ export async function publicRoutes(app: FastifyInstance, options: { services: Se
         .parse(request.body);
 
       if (!services.db) {
+      app.recordLoginFailure(request.ip);
         return reply.code(503).send({
           error: {
             code: 'CONFIGURATION',
@@ -593,6 +594,8 @@ export async function publicRoutes(app: FastifyInstance, options: { services: Se
       );
 
       if (!row || !ok) {
+        // Counted so the per-IP lockout in server.ts can trip.
+        app.recordLoginFailure(request.ip);
         return reply.code(401).send({
           error: { code: 'UNAUTHORIZED', message: 'Those credentials did not work' },
         });

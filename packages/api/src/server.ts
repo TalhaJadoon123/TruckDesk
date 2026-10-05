@@ -45,6 +45,15 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Tru
   const logger =
     options.logger ?? (config.NODE_ENV !== 'test' && process.env['LOG_LEVEL'] !== 'silent');
 
+  /**
+   * Per-IP failure counter for the unauthenticated credential endpoints. Kept
+   * in-process, which is the right trade for a single-node deploy: with several
+   * replicas each holds its own window, so a distributed spray is under-counted
+   * by the replica count. That is a deliberate accepted limit, recorded in
+   * docs/OPERATIONS.md rather than left implicit.
+   */
+  const loginAttempts = new Map<string, { count: number; last: number }>();
+
   const app = Fastify({
     logger,
     // Behind a proxy, which is how Cloudflare and a Docker deploy both arrive.
@@ -74,14 +83,72 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Tru
     // humans and tight enough to stop a runaway mobile retry loop.
     max: 600,
     timeWindow: '1 minute',
-    // The driver's phone polls position and syncs offline queues; those are not
-    // the calls a rate limiter should be protecting.
-    allowList: (request) => request.url.startsWith('/health') || request.url.startsWith('/track/ping'),
+    // Only the health probe is exempt. `/track/ping` used to be exempt too,
+    // which is wrong: it writes a row per ping, so an unauthenticated flood of
+    // it is both a storage-exhaustion vector and a way to poison the map.
+    // The driver's phone is bounded by the fact that a truck pings at most once
+    // a minute, which is three orders of magnitude below this limit.
+    allowList: (request) => request.url.startsWith('/health'),
     keyGenerator: (request) => {
+      // Key on the token's tail so one driver's phone cannot exhaust another
+      // driver's budget. It is a rate-limit key, not a secret, so hashing it
+      // would add nothing.
       const header = request.headers.authorization;
-      if (header) return header.slice(-24);
+      if (header && header.length > 20) return header.slice(-20);
       return request.ip;
     },
+  });
+
+  /**
+   * A much tighter limit on the unauthenticated endpoints worth attacking:
+   * signing in and the public calculator. A global limiter at 600/min would
+   * leave a password spray effectively unthrottled.
+   *
+   * The hook is added to the *root* instance, not inside a `register()`ed
+   * plugin. Fastify encapsulates: a hook added inside a plugin only applies to
+   * that plugin's own routes and children, so registering it as a sibling would
+   * silently never run for the routes it was written to protect. That mistake
+   * was caught by `pnpm gate`, which is the reason the gate exists.
+   */
+  app.addHook('onRequest', async (request, reply) => {
+    if (request.method !== 'POST') return;
+
+    const path = request.url.split('?')[0] ?? request.url;
+    if (path !== '/public/login' && path !== '/signup') return;
+
+    const now = Date.now();
+    const key = request.ip;
+    const entry = loginAttempts.get(key);
+
+    // Sliding window: five failures, then a fifteen-minute lockout.
+    if (entry && entry.count >= 5 && now - entry.last < 15 * 60_000) {
+      const retryAfter = Math.ceil((15 * 60_000 - (now - entry.last)) / 1000);
+      return reply
+        .header('Retry-After', String(retryAfter))
+        .code(429)
+        .send({
+          error: {
+            code: 'RATE_LIMITED',
+            message: `Too many attempts. Try again in ${Math.ceil(retryAfter / 60)} minutes.`,
+          },
+        });
+    }
+
+    // Stale window: start a fresh count.
+    if (!entry || now - entry.last > 15 * 60_000) {
+      loginAttempts.set(key, { count: 0, last: now });
+    }
+  });
+
+  /** Called by `/public/login` and `/signup` so a real failure is counted. */
+  app.decorate('recordLoginFailure', (ip: string) => {
+    const now = Date.now();
+    const entry = loginAttempts.get(ip);
+    if (!entry || now - entry.last > 15 * 60_000) {
+      loginAttempts.set(ip, { count: 1, last: now });
+      return;
+    }
+    loginAttempts.set(ip, { count: entry.count + 1, last: now });
   });
 
   await app.register(authPlugin, { services });

@@ -87,6 +87,22 @@ jobs:
       - name: Seed smoke test
         run: pnpm --filter @truckdesk/api run seed
 
+      # Exercises the running server rather than reading the source: auth on
+      # every sensitive route, role separation, tenant isolation, token
+      # forgery, error hygiene, SSRF surface and the credential lockout.
+      - name: Security gate
+        run: pnpm --filter @truckdesk/api run gate
+
+      # The migrations must exist and be internally consistent. Executing them
+      # needs a live Postgres, so the DB migration itself is a manual
+      # pre-deploy step, recorded in docs/OPERATIONS.md.
+      - name: Validate migrations
+        run: node scripts/validate-migrations.mjs
+
+      # A secret in the committed tree is a release blocker, not a warning.
+      - name: Scan for committed secrets
+        run: node scripts/scan-secrets.mjs
+
       - name: Audit dependencies
         # Advisory only: the esbuild advisory is dev-tooling only, and a hard
         # failure here would block a merge for something with no runtime impact.

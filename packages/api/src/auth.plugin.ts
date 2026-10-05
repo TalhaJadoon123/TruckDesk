@@ -25,6 +25,11 @@ declare module 'fastify' {
     /** Require a dispatcher, owner or admin role. */
     requireDispatch(request: FastifyRequest, reply: FastifyReply): Promise<void>;
     requireBilling(request: FastifyRequest, reply: FastifyReply): Promise<void>;
+    /**
+     * Record a failed credential attempt against an IP so the per-IP lockout
+     * in server.ts can trip. Called by /public/login and /signup.
+     */
+    recordLoginFailure(ip: string): void;
   }
 }
 
