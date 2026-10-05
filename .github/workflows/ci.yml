@@ -1,0 +1,77 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs: a fleet of stale checks costs more than it tells you.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: build, typecheck, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # `--ignore-scripts` keeps esbuild and workerd from running their
+      # postinstall hooks in CI; nothing here needs their native binaries.
+      - name: Install
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build libraries
+        run: >-
+          pnpm --filter @truckdesk/shared --filter @truckdesk/core
+          --filter @truckdesk/eld --filter @truckdesk/loads
+          --filter @truckdesk/llm --filter @truckdesk/sms
+          --filter @truckdesk/integrations run build
+
+      - name: Build API
+        run: pnpm --filter @truckdesk/api run build
+
+      - name: Typecheck API
+        run: pnpm --filter @truckdesk/api exec tsc -p tsconfig.json --noEmit
+
+      - name: Typecheck desktop
+        run: pnpm --filter @truckdesk/desktop run typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      # Drives the real Fastify server through a full dispatcher session with
+      # no sockets: book, parse an email, dispatch, track, deliver, invoice,
+      # settle and calculate IFTA, including every refusal path.
+      - name: End-to-end smoke
+        run: pnpm --filter @truckdesk/api run smoke
+
+      # Throws degenerate and hostile input at every exported surface. This is
+      # the check that catches NaN leaking into a distance or a tenant-scoped
+      # storage key escaping its prefix.
+      - name: Adversarial probe
+        run: pnpm --filter @truckdesk/api run probe
+
+      - name: CSV parser probe
+        run: pnpm --filter @truckdesk/api exec tsx src/probe-csv.ts
+
+      - name: Seed smoke test
+        run: pnpm --filter @truckdesk/api run seed
+
+      - name: Audit dependencies
+        # Advisory only: the esbuild advisory is dev-tooling only, and a hard
+        # failure here would block a merge for something with no runtime impact.
+        continue-on-error: true
+        run: pnpm audit --audit-level=moderate

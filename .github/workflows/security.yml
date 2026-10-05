@@ -1,0 +1,46 @@
+name: security
+
+on:
+  schedule:
+    # Off the hour on Tuesdays: a weekly dependency sweep is enough for a project
+    # with no production runtime dependencies beyond Postgres and fetch.
+    - cron: '17 6 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Audit
+        run: pnpm audit --audit-level=high
+
+      - name: Verify the lockfile has not drifted
+        # A lockfile edited by hand is the most common way a dependency audit
+        # silently stops describing what actually ships.
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          if ! git diff --quiet -- pnpm-lock.yaml; then
+            echo 'pnpm-lock.yaml changed. Commit the lockfile with the manifest change.'
+            git diff --stat -- pnpm-lock.yaml
+            exit 1
+          fi
