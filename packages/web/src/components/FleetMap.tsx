@@ -37,7 +37,10 @@ const Polyline = dynamic(
   { ssr: false },
 );
 
-const L = dynamic(() => import('leaflet'), { ssr: false });
+// Leaflet itself is loaded in an effect below rather than through
+// `next/dynamic`, because it is only needed to build an icon factory and
+// `divIcon` is easier to reach off the imported namespace than off a lazily
+// rendered component.
 
 const TRUCK_COLOR: Record<string, string> = {
   available: '#3ecf8e',
@@ -73,8 +76,8 @@ export function FleetMap({ track, height = 480 }: { track: TrackResponse | null;
         iconSize: [22, 22],
         iconAnchor: [11, 11],
         popupAnchor: [0, -12],
-        // The label is decorative; the popup carries the real information.
-        alt: label,
+        // Leaflet 1.9's DivIconOptions has no `alt` field, so the label is
+        // carried in the popup instead.
       });
   }, [leaflet]);
 

@@ -2,7 +2,7 @@
 title: Desktop app
 group: Start here
 order: 8
-description: A native window around the same API: dispatch, fleet and money, offline-capable shell.
+description: "A native window around the same API: dispatch, fleet and money, offline-capable shell."
 ---
 
 `packages/desktop` is an Electron app that talks to the same HTTP API the web

@@ -13,7 +13,7 @@
 
 import { cookies } from 'next/headers';
 
-import { issueApiToken } from './token';
+import { issueApiToken, signHmac } from './token';
 import { endpoints, type DashboardResponse } from './api';
 
 export const SESSION_COOKIE = 'truckdesk_session';

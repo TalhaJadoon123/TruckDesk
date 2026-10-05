@@ -34,6 +34,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      # Catches a manifest edited without a matching install. Both dependency
+      # bugs this project hit - a dropped `postgres` and an added
+      # `fastify-plugin` - compiled fine locally against a stale node_modules
+      # and failed only in a clean checkout.
+      - name: Check dependency parity
+        run: node scripts/check-dependency-parity.mjs
+
       - name: Build libraries
         run: >-
           pnpm --filter @truckdesk/shared --filter @truckdesk/core
@@ -49,6 +56,15 @@ jobs:
 
       - name: Typecheck desktop
         run: pnpm --filter @truckdesk/desktop run typecheck
+
+      # The web and docs tiers are full Next.js builds rather than typechecks:
+      # a page can typecheck and still fail to prerender, which is exactly what
+      # the docs build did when two front-matter descriptions contained ': '.
+      - name: Build web
+        run: pnpm --filter @truckdesk/web run build
+
+      - name: Build docs
+        run: pnpm --filter @truckdesk/docs run build
 
       - name: Unit tests
         run: pnpm test

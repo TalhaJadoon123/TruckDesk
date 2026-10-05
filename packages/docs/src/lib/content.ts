@@ -44,7 +44,10 @@ export function readDoc(slug: string): { page: DocPage; html: string } | null {
   const file = path.join(CONTENT_DIR, `${slug}.md`);
   if (!fs.existsSync(file)) return null;
 
-  const raw = fs.readFileSync(file, 'utf8');
+  // gray-matter mis-parses front matter that is not newline-terminated, so a
+  // missing trailing newline is normalised here rather than trusted to the
+  // editor that produced the file.
+  const raw = fs.readFileSync(file, 'utf8').replace(/\s*$/, '\n');
   const { data } = matter(raw);
   const html = marked.parse(raw, { async: false }) as string;
 

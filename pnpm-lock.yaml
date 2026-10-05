@@ -80,6 +80,9 @@ importers:
       hono:
         specifier: ^4.13.12
         version: 4.13.12
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -5582,8 +5585,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
-  postgres@3.4.9:
-    optional: true
+  postgres@3.4.9: {}
 
   prettier@3.9.9: {}
 

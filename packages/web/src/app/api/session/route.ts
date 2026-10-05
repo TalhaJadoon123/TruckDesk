@@ -51,7 +51,6 @@ export async function POST(request: Request): Promise<Response> {
       role: body.role ?? 'dispatcher',
       email: body.email ?? '',
       name: body.name ?? body.email ?? 'User',
-      token: body.token,
     },
     secret,
   );

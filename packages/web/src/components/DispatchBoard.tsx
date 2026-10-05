@@ -460,7 +460,7 @@ function AssignTray({
 
   // Rank trucks for this specific load.
   const ranked = useMemo(() => {
-    const fromMatch = score?.matches
+    const fromMatch = (score?.matches ?? [])
       .filter((match) => match.loadId === load.id)
       .sort((a, b) => b.score - a.score)
       .map((match) => ({
@@ -474,8 +474,8 @@ function AssignTray({
     return trucks.map((truck) => ({ truck, match: null }));
   }, [score, trucks, load.id]);
 
-  const visible = ranked.filter((row) =>
-    filter === 'all' ? true : !row.truck.currentLoadId && row.truck.status !== 'maintenance',
+  const visible = ranked.filter(
+    (row) => filter === 'all' || (!row.truck.currentLoadId && row.truck.status !== 'maintenance'),
   );
 
   return (

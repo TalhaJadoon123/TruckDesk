@@ -2,7 +2,7 @@
 title: Free tier setup
 group: Free tier setup
 order: 2
-description: Every integration TruckDesk needs, ranked by how long it takes. Total cost: zero.
+description: "Every integration TruckDesk needs, ranked by how long it takes. Total cost: zero."
 ---
 
 The whole product can run at $0 indefinitely. This is the order that actually
